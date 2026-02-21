@@ -1,0 +1,140 @@
+#+TITLE: Chapter 7 --- Illustrations
+#+SUBTITLE: Step-by-step visual walkthroughs of each algorithm
+
+* Reverse Bits: 5-Step Divide-and-Conquer Swap
+
+** The Idea
+
+Reverse a 32-bit word by swapping at increasingly large scales:
+adjacent bits, then pairs, then nibbles, then bytes, then halfwords.
+
+Each step uses the pattern:
+#+begin_example
+  x = ((x & MASK) << shift) | ((x & ~MASK) >> shift)
+#+end_example
+
+** Walkthrough: =reverseBits(0x0000000F)= -> =0xF0000000=
+
+Showing the full 32 bits. Input: =0x0000000F = 0000...0000 1111=
+
+*** Step 1: Swap adjacent bits (mask =0x55555555=)
+
+#+begin_example
+  ...0000 0000 0000 1111
+         swap each pair of adjacent bits:
+  ...0000 0000 0000 1111
+                    ^^^^
+    Bit pairs: 00 00 00 00 ... 00 00 11 11
+    Swapped:   00 00 00 00 ... 00 00 11 11  (1111 is a palindrome!)
+
+  Result: 0000 ... 0000 1111  (no change here because 1111 is symmetric)
+#+end_example
+
+*** Step 2: Swap adjacent 2-bit groups (mask =0x33333333=)
+
+#+begin_example
+    Nibble groups: ... 0000  1111
+    Swap pairs within each nibble:
+      0000 -> 00|00 -> 00|00 = 0000
+      1111 -> 11|11 -> 11|11 = 1111
+
+  Result: 0000 ... 0000 1111  (still symmetric)
+#+end_example
+
+*** Step 3: Swap adjacent nibbles (mask =0x0F0F0F0F=)
+
+#+begin_example
+    Byte groups: ... 00000000  00001111
+    Swap nibbles within each byte:
+      00000000 -> 0000|0000 -> 0000|0000
+      00001111 -> 0000|1111 -> 1111|0000
+
+  Result: 0000 ... 0000 0000  1111 0000
+          (the F nibble moved from low to high within its byte)
+#+end_example
+
+*** Step 4: Swap adjacent bytes (mask =0x00FF00FF=)
+
+#+begin_example
+    Halfword groups: ... 0000 0000 | 0000 0000    0000 0000 | 1111 0000
+    Swap bytes within each halfword:
+      [00][00] -> [00][00]
+      [00][F0] -> [F0][00]
+
+  Result: 0000 0000 0000 0000  1111 0000 0000 0000
+#+end_example
+
+*** Step 5: Swap halfwords (mask =0x0000FFFF=)
+
+#+begin_example
+    Word: 0000 0000 0000 0000 | 1111 0000 0000 0000
+    Swap upper and lower 16 bits:
+
+  Result: 1111 0000 0000 0000  0000 0000 0000 0000
+        = 0xF0000000
+#+end_example
+
+** Visual summary of the 5 steps
+
+Using 8 bits for compact illustration: =reverseBits(0b01011010)=
+
+#+begin_example
+  Start:  0 1 0 1 1 0 1 0
+
+  Step 1: Swap adjacent bits
+          1 0 1 0 0 1 0 1
+          ~~ ~~ ~~ ~~
+
+  Step 2: Swap adjacent pairs
+          1 0 0 1 0 1 1 0
+          ~~~~ ~~~~ ~~~~ ~~~~
+
+  Step 3: Swap adjacent nibbles
+          0 1 1 0 1 0 0 1
+          ~~~~~~~~ ~~~~~~~~
+
+  (Steps 4-5 swap bytes/halfwords, not applicable for 8-bit)
+
+  Final:  0 1 0 1 1 0 1 0  <-- reverse of the original!
+#+end_example
+
+* Reverse Bytes: Endianness Swap
+
+** The Idea
+
+Only the last two steps of bit reversal: swap adjacent bytes within
+each halfword, then swap the two halfwords.
+
+** Walkthrough: =reverseBytes(0x12345678)= -> =0x78563412=
+
+#+begin_example
+  Start: [12] [34] [56] [78]
+          byte3 byte2 byte1 byte0
+
+  Step 1: Swap bytes within each halfword (mask 0x00FF00FF, shift 8)
+
+    Left half:  [12][34] -> [34][12]
+    Right half: [56][78] -> [78][56]
+
+    Result: [34] [12] [78] [56]
+
+  Step 2: Swap halfwords (mask 0x0000FFFF, shift 16)
+
+    [34][12] | [78][56]  -->  [78][56] | [34][12]
+
+    Result: [78] [56] [34] [12] = 0x78563412
+#+end_example
+
+** Why this matters: endianness
+
+#+begin_example
+  Big-endian memory layout (network byte order):
+    Address:  0x00  0x01  0x02  0x03
+    Content:  [12]  [34]  [56]  [78]
+
+  Little-endian memory layout (x86):
+    Address:  0x00  0x01  0x02  0x03
+    Content:  [78]  [56]  [34]  [12]
+
+  reverseBytes() converts between these two layouts.
+#+end_example

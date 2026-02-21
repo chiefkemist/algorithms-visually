@@ -1,0 +1,191 @@
+#+TITLE: Chapter 2 --- Illustrations
+#+SUBTITLE: Step-by-step visual walkthroughs of each algorithm
+
+* Section 2-1: Rightmost Bit Operations
+
+** Turn Off the Rightmost 1-Bit: =x & (x - 1)=
+
+The trick: subtracting 1 flips the rightmost 1 and all bits below it.
+ANDing with the original cancels exactly that bit.
+
+#+begin_example
+  x       = 0101 1000
+  x - 1   = 0101 0111     (borrow ripples through the rightmost 1)
+             ---- ~~~~
+  x & (x-1) = 0101 0000   (the rightmost 1-bit is gone)
+                  ^
+                  this bit was turned off
+#+end_example
+
+Another example:
+
+#+begin_example
+  x       = 1100 0100
+  x - 1   = 1100 0011     (borrow flips 100 -> 011)
+  x & (x-1) = 1100 0000
+                    ^
+#+end_example
+
+Power-of-2 detection: if =x & (x - 1) == 0=, then =x= had only
+one bit set (it was a power of 2).
+
+#+begin_example
+  x = 0100 0000   (64, a power of 2)
+  x - 1 = 0011 1111
+  x & (x-1) = 0000 0000   --> power of 2!
+
+  x = 0101 0000   (80, NOT a power of 2)
+  x - 1 = 0100 1111
+  x & (x-1) = 0100 0000   --> not zero, not a power of 2
+#+end_example
+
+** Turn On the Rightmost 0-Bit: =x | (x + 1)=
+
+Adding 1 flips the rightmost 0 (and clears trailing 1s below).
+ORing with the original preserves everything and turns on that 0.
+
+#+begin_example
+  x       = 1010 0111
+  x + 1   = 1010 1000     (carry ripples through trailing 1s)
+             ---- ~~~~
+  x | (x+1) = 1010 1111   (the rightmost 0-bit is now 1)
+                  ^
+                  this bit was turned on
+#+end_example
+
+** Isolate the Rightmost 1-Bit: =x & (-x)=
+
+Negation in two's complement: flip all bits and add 1. The bits
+below the rightmost 1 get flipped back. ANDing keeps only that bit.
+
+#+begin_example
+  x       = 0101 1000
+  -x      = 1010 1000     (two's complement)
+
+  Let's see why:
+  ~x      = 1010 0111     (flip all bits)
+  ~x + 1  = 1010 1000     (add 1: carry ripples through 0111 -> 1000)
+
+  x & (-x) = 0000 1000    (only the rightmost 1-bit survives)
+                  ^
+#+end_example
+
+** Isolate the Rightmost 0-Bit: =~x & (x + 1)=
+
+Complement =x= to turn its 0s into 1s. Adding 1 to =x= turns the
+rightmost 0 into 1. AND extracts only that position.
+
+#+begin_example
+  x       = 1010 0111
+  ~x      = 0101 1000
+  x + 1   = 1010 1000     (the rightmost 0 flips to 1)
+
+  ~x & (x+1) = 0000 1000  (the position of the rightmost 0)
+                    ^
+#+end_example
+
+** Mask from the Rightmost 1-Bit: =x ^ (x - 1)=
+
+XOR highlights every bit that changed when we subtracted 1. The
+borrow ripples from the rightmost 1 down, so all those bits differ.
+
+#+begin_example
+  x       = 0101 1000
+  x - 1   = 0101 0111
+
+  Compare each bit position:
+    0 1 0 1 1 0 0 0     x
+    0 1 0 1 0 1 1 1     x-1
+    ─ ─ ─ ─ ─ ─ ─ ─
+    0 0 0 0 1 1 1 1     XOR: bits that changed
+
+  x ^ (x-1) = 0000 1111   (mask from rightmost 1 through trailing 0s)
+#+end_example
+
+** Turn Off Trailing 1-Bits: =x & (x + 1)=
+
+Adding 1 ripples a carry through all trailing 1s, turning them to 0.
+ANDing clears all those positions.
+
+#+begin_example
+  x       = 1010 0111
+  x + 1   = 1010 1000     (carry: 0111 + 1 = 1000)
+
+  x & (x+1) = 1010 0000   (trailing 1s are gone)
+                   ~~~
+                   these three 1-bits were turned off
+#+end_example
+
+** Turn On Trailing 0-Bits: =x | (x - 1)=
+
+Subtracting 1 ripples a borrow through the rightmost 1, turning all
+trailing 0s to 1. ORing keeps them.
+
+#+begin_example
+  x       = 1010 1000
+  x - 1   = 1010 0111     (borrow: 1000 - 1 = 0111)
+
+  x | (x-1) = 1010 1111   (trailing 0s are now 1s)
+                   ~~~
+                   these three 0-bits were turned on
+#+end_example
+
+* Section 2-4: Branchless Absolute Value
+
+** =branchlessAbs(x)=: =y = x >> 31; (x ^ y) - y=
+
+Arithmetic right shift by 31 creates a *sign mask*:
+- Positive =x=: =y = 0x00000000= (all zeros)
+- Negative =x=: =y = 0xFFFFFFFF= (all ones)
+
+*** Positive input (x = 5)
+
+#+begin_example
+  x = 0000 0000 0000 0000 0000 0000 0000 0101   (5)
+  y = x >> 31
+    = 0000 0000 0000 0000 0000 0000 0000 0000   (0)
+
+  x ^ y = 5 ^ 0 = 5      (XOR with 0 changes nothing)
+  (x ^ y) - y = 5 - 0 = 5
+#+end_example
+
+*** Negative input (x = -5)
+
+#+begin_example
+  x = 1111 1111 1111 1111 1111 1111 1111 1011   (-5 in two's complement)
+  y = x >> 31
+    = 1111 1111 1111 1111 1111 1111 1111 1111   (-1, all ones)
+
+  x ^ y = -5 ^ -1
+        = 1111...1011 ^ 1111...1111
+        = 0000...0100                            (4, which is |x|-1)
+
+  (x ^ y) - y = 4 - (-1) = 4 + 1 = 5
+#+end_example
+
+Why it works: XOR with all-ones is bitwise NOT. Bitwise NOT of a
+two's complement number gives =-(x+1)=. Subtracting =-1= (adding 1)
+gives =-x=. So for negative =x=: =~x + 1 = -x = |x|=.
+
+** =branchlessNabs(x)=: =y = x >> 31; y - (x ^ y)=
+
+Same mask, reversed subtraction. Always returns non-positive.
+
+*** Positive input (x = 5)
+
+#+begin_example
+  y = 0
+  x ^ y = 5
+  y - (x ^ y) = 0 - 5 = -5
+#+end_example
+
+*** Negative input (x = -5)
+
+#+begin_example
+  y = -1
+  x ^ y = 4        (same as above)
+  y - (x ^ y) = -1 - 4 = -5
+#+end_example
+
+Advantage: =nabs(INT_MIN)= is well-defined (=-2147483648=), while
+=abs(INT_MIN)= overflows.

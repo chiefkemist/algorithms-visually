@@ -1,0 +1,170 @@
+#+TITLE: Chapter 5 --- Counting Bits
+#+SUBTITLE: Hacker's Delight, 2nd Edition --- Sections 5-1, 5-3, and 5-4
+#+AUTHOR: Henry S. Warren, Jr.
+
+* The Problems
+
+** Section 5-1: Counting 1-Bits (Population Count)
+
+The fundamental problem: given a computer word, count the number of
+bits that are set to 1.
+
+#+begin_quote
+"The IBM Stretch computer (ca. 1960) had a means of counting the
+number of 1-bits in a word, as well as the number of leading zeros.
+In the Stretch, counting 1-bits was termed a 'population count' and
+was implemented by means of a special 'analytical' adder."
+--- Warren, p. 81
+#+end_quote
+
+This function is also called the *Hamming weight*.
+
+#+begin_example
+    pop(0x00000000) = 0
+    pop(0x00000001) = 1
+    pop(0x000000FF) = 8
+    pop(0x55555555) = 16
+    pop(0xFFFFFFFF) = 32
+    pop(0b10101010) = 4
+#+end_example
+
+*** The Divide-and-Conquer Approach
+
+Warren presents a method that counts bits *in parallel* by summing
+adjacent groups of progressively larger sizes:
+
+1. Sum adjacent *single bits* into 2-bit counts (using mask =0x55555555=)
+2. Sum adjacent *2-bit counts* into 4-bit counts (using mask =0x33333333=)
+3. Sum adjacent *4-bit counts* into 8-bit counts (using mask =0x0F0F0F0F=)
+4. Sum adjacent *8-bit counts* into 16-bit counts
+5. Sum adjacent *16-bit counts* into the final 32-bit count
+
+This completes in 5 steps regardless of the input --- no loops, no
+branches.
+
+*** The Naive Approach
+
+As a baseline, Warren also describes the simple loop-based approach:
+check the lowest bit with =x & 1=, shift right, repeat 32 times.
+This requires 32 iterations versus 5 parallel steps.
+
+*** Applications (from Warren)
+
+Warren lists several applications of the population count function:
+
+1. *Hamming Distance*
+
+   #+begin_quote
+   "An application of the population count function is in computing
+   the 'Hamming distance' between two bit vectors --- that is, the
+   number of positions at which corresponding bits differ."
+   --- Warren, p. 82
+   #+end_quote
+
+   The formula: =dist(x, y) = pop(x ^ y)=
+
+2. *Sparse Array Indexing*
+
+   #+begin_quote
+   "Another application is to allow reasonably fast direct-indexed
+   access to a moderately sparse array."
+   --- Warren, p. 82
+   #+end_quote
+
+   A bitmap tracks which elements exist, and =pop= computes the
+   physical index from the logical index.
+
+3. *NSA Cryptography*
+
+   #+begin_quote
+   "According to computer folklore, the population count function is
+   important to the National Security Agency."
+   --- Warren, p. 82
+   #+end_quote
+
+4. *Binomial Random Numbers*
+
+   Population count of a random word yields a binomial(32, 0.5)
+   distribution.
+
+** Section 5-3: Counting Leading Zeros (=nlz=)
+
+Given a 32-bit word, count the number of consecutive 0-bits starting
+from the most significant bit (bit 31) until the first 1-bit is
+encountered.
+
+#+begin_example
+    nlz(0)          = 32   (all zeros)
+    nlz(1)          = 31   (only bit 0 is set)
+    nlz(0x80000000) = 0    (bit 31 is set)
+    nlz(0xFF)       = 24   (highest set bit is at position 7)
+    nlz(0b1010)     = 28
+#+end_example
+
+Warren presents a *binary search* approach: check if the upper half
+of the word is all zeros. If so, the answer is at least 16 --- add 16
+to the count and shift left by 16. Then check the upper quarter, and
+so on.
+
+** Section 5-4: Counting Trailing Zeros (=ntz=)
+
+Given a 32-bit word, count the number of consecutive 0-bits starting
+from the least significant bit (bit 0) until the first 1-bit is
+encountered.
+
+#+begin_example
+    ntz(0)          = 32
+    ntz(1)          = 0
+    ntz(0x80000000) = 31
+    ntz(0b01011000) = 3
+    ntz(12)         = 2
+#+end_example
+
+Warren shows an elegant connection to population count:
+
+#+begin_quote
+"ntz(x) = pop(~x & (x - 1))"
+--- Warren, p. 107
+#+end_quote
+
+The expression =~x & (x - 1)= creates a mask with 1-bits in every
+trailing zero position. Counting those 1-bits gives the number of
+trailing zeros.
+
+* Why These Matter
+
+Warren puts it succinctly: counting bits is one of the most
+fundamental operations in computing, and hardware support for it has
+existed since the 1960s. The IBM Stretch provided it as a built-in
+instruction; modern x86 processors have =POPCNT=, =LZCNT=, and
+=TZCNT= instructions.
+
+The software implementations matter because:
+
+- Not all architectures provide hardware support
+- Understanding the algorithms illuminates the divide-and-conquer
+  principle at the bit level
+- These primitives appear inside countless higher-level algorithms
+  (compression, error correction, set operations, graph algorithms)
+
+* Formulas at a Glance
+
+| Operation        | Technique                                             |
+|------------------+-------------------------------------------------------|
+| =pop(x)=         | Divide-and-conquer: pairs, nibbles, bytes, halfwords |
+| =nlz(x)=         | Binary search: check upper half, quarter, eighth, ...   |
+| =ntz(x)=         | =pop(~x & (x - 1))= (mask trailing zeros, count them)|
+
+* Implementation Files
+
+| File                        | Functions                              | Section |
+|-----------------------------+----------------------------------------+---------|
+| =popcount.zig=               | popcount, popcountNaive               | 5-1     |
+| =leading_trailing_zeros.zig= | countLeadingZeros, countTrailingZeros | 5-3/5-4 |
+
+* References
+
+- Hacker's Delight, 2nd Edition, Chapter 5: "Counting Bits"
+  - Section 5-1: "Counting 1-Bits" (pp. 81-96)
+  - Section 5-3: "Counting Leading 0's" (pp. 99-107)
+  - Section 5-4: "Counting Trailing 0's" (pp. 107-109)

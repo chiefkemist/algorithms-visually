@@ -1,0 +1,156 @@
+#+TITLE: Chapter 3 --- Illustrations
+#+SUBTITLE: Step-by-step visual walkthroughs of each algorithm
+
+* Round Up to Power of 2 (=clp2=): Subtract 1, Flood, Add 1
+
+** Algorithm
+
+#+begin_example
+  x = x - 1          (so exact powers of 2 map to themselves)
+  x = x | (x >> 1)   (flood by 1)
+  x = x | (x >> 2)   (flood by 2)
+  x = x | (x >> 4)   (flood by 4)
+  x = x | (x >> 8)   (flood by 8)
+  x = x | (x >> 16)  (flood by 16)
+  x = x + 1          (the flood gives 2^n - 1; add 1 for 2^n)
+#+end_example
+
+** Walkthrough: =clp2(200)= -> =256=
+
+#+begin_example
+  Start:   x = 200 = 0000 0000 0000 0000 0000 0000 1100 1000
+
+  Step 0: x - 1 = 199
+           x = 0000 0000 0000 0000 0000 0000 1100 0111
+
+  Step 1: x |= (x >> 1)
+           0000 0000 0000 0000 0000 0000 1100 0111   x
+           0000 0000 0000 0000 0000 0000 0110 0011   x >> 1
+           ─────────────────────────────────────────
+           0000 0000 0000 0000 0000 0000 1110 0111   result
+
+  Step 2: x |= (x >> 2)
+           0000 0000 0000 0000 0000 0000 1110 0111   x
+           0000 0000 0000 0000 0000 0000 0011 1001   x >> 2
+           ─────────────────────────────────────────
+           0000 0000 0000 0000 0000 0000 1111 1111   result
+
+  Step 3: x |= (x >> 4)
+           Already 1111 1111 in low byte -- flooding has no effect.
+           Result: 0000 0000 0000 0000 0000 0000 1111 1111
+
+  Steps 4-5: No effect (higher bits already zero).
+
+  Final: x + 1 = 0000 0000 0000 0000 0000 0001 0000 0000 = 256
+#+end_example
+
+** Walkthrough: =clp2(8)= -> =8= (exact power of 2)
+
+#+begin_example
+  Start:   x = 8 = 0000 1000
+
+  Step 0: x - 1 = 7
+           x = 0000 0111
+
+  Flood:   0000 0111 -> 0000 0111 -> 0000 0111  (already flooded)
+
+  Final: x + 1 = 0000 1000 = 8  (maps back to itself!)
+#+end_example
+
+The subtract-1 trick ensures that exact powers of 2 are not rounded
+up to the next one.
+
+* Round Down to Power of 2 (=flp2=): Flood, Subtract Half
+
+** Algorithm
+
+#+begin_example
+  x = x | (x >> 1)
+  x = x | (x >> 2)
+  x = x | (x >> 4)
+  x = x | (x >> 8)
+  x = x | (x >> 16)
+  x = x - (x >> 1)       (keep only the highest bit)
+#+end_example
+
+** Walkthrough: =flp2(200)= -> =128=
+
+#+begin_example
+  Start:   x = 200 = 0000 0000 0000 0000 0000 0000 1100 1000
+
+  Step 1: x |= (x >> 1)
+           1100 1000
+           0110 0100
+           ─────────
+           1110 1100
+
+  Step 2: x |= (x >> 2)
+           1110 1100
+           0011 1011
+           ─────────
+           1111 1111
+
+  Steps 3-5: No further effect.
+
+  x = 0000 0000 0000 0000 0000 0000 1111 1111 = 255
+
+  Subtract half:
+    x       = 1111 1111
+    x >> 1  = 0111 1111
+    x - (x >> 1) = 1000 0000 = 128
+#+end_example
+
+The flood fills everything below the highest bit. Subtracting half
+keeps only the highest bit.
+
+* Floor Log2: Binary Search
+
+** Algorithm
+
+Check if the value fits in progressively smaller ranges:
+
+#+begin_example
+  n = 0
+  if (v >= 2^16) { n += 16; v >>= 16 }
+  if (v >= 2^8)  { n +=  8; v >>=  8 }
+  if (v >= 2^4)  { n +=  4; v >>=  4 }
+  if (v >= 2^2)  { n +=  2; v >>=  2 }
+  if (v >= 2^1)  { n +=  1 }
+  return n
+#+end_example
+
+** Walkthrough: =floorLog2(200)= -> =7=
+
+#+begin_example
+  v = 200 = 0000 0000 0000 0000 0000 0000 1100 1000
+  n = 0
+
+  Is v >= 65536 (2^16)?  200 < 65536   --> no
+  Is v >= 256   (2^8)?   200 < 256     --> no
+  Is v >= 16    (2^4)?   200 >= 16     --> yes!
+      n = 0 + 4 = 4
+      v = 200 >> 4 = 12 = 0000 1100
+
+  Is v >= 4     (2^2)?   12 >= 4       --> yes!
+      n = 4 + 2 = 6
+      v = 12 >> 2 = 3 = 0000 0011
+
+  Is v >= 2     (2^1)?   3 >= 2        --> yes!
+      n = 6 + 1 = 7
+
+  Result: 7     (since 2^7 = 128 <= 200 < 256 = 2^8)
+#+end_example
+
+** Walkthrough: =floorLog2(16)= -> =4=
+
+#+begin_example
+  v = 16, n = 0
+
+  v >= 65536?  no
+  v >= 256?    no
+  v >= 16?     yes  --> n=4, v=1
+  v >= 4?      no
+  v >= 2?      no
+
+  Result: 4    (since 2^4 = 16)
+#+end_example

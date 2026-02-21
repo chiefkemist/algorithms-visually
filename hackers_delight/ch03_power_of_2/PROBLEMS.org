@@ -1,0 +1,129 @@
+#+TITLE: Chapter 3 --- Power-of-2 Boundaries
+#+SUBTITLE: Hacker's Delight, 2nd Edition --- Section 3-2
+#+AUTHOR: Henry S. Warren, Jr.
+
+* The Problem
+
+Warren defines two functions that are analogous to floor and ceiling,
+but instead of rounding to the nearest integer, they round to the
+nearest *power of 2*.
+
+#+begin_quote
+"We define two functions that are similar to floor and ceiling, but
+which are directed roundings to the closest integral power of 2,
+rather than to the closest integer."
+--- Warren, p. 59
+#+end_quote
+
+** Round Up to the Next Power of 2 (=clp2=)
+
+Given an unsigned integer =x=, find the smallest power of 2 that is
+*greater than or equal to* =x=.
+
+Warren calls this function =clp2= (ceiling log power of 2).
+
+#+begin_example
+    clp2(0)   = 0
+    clp2(1)   = 1
+    clp2(2)   = 2
+    clp2(3)   = 4
+    clp2(5)   = 8
+    clp2(8)   = 8
+    clp2(9)   = 16
+    clp2(200) = 256
+#+end_example
+
+** Round Down to the Previous Power of 2 (=flp2=)
+
+Given an unsigned integer =x=, find the largest power of 2 that is
+*less than or equal to* =x=.
+
+Warren calls this function =flp2= (floor log power of 2).
+
+#+begin_example
+    flp2(0)   = 0
+    flp2(1)   = 1
+    flp2(2)   = 2
+    flp2(3)   = 2
+    flp2(5)   = 4
+    flp2(8)   = 8
+    flp2(200) = 128
+#+end_example
+
+** Floor of Log Base 2
+
+Given a positive integer =x=, compute the position of the highest set
+bit (equivalently, the floor of log base 2).
+
+#+begin_example
+    floorLog2(1)   = 0
+    floorLog2(2)   = 1
+    floorLog2(8)   = 3
+    floorLog2(15)  = 3
+    floorLog2(16)  = 4
+    floorLog2(200) = 7
+#+end_example
+
+* The Technique: Bit Flooding
+
+Warren's algorithms for both =clp2= and =flp2= share a common
+technique: *right-propagating the highest set bit*.
+
+The idea is to take the highest 1-bit in =x= and smear it rightward
+across all lower bit positions, creating a mask of all 1s from the
+highest set bit down to bit 0.
+
+For a 32-bit word, this requires five steps, each doubling the flood
+width:
+
+#+begin_example
+    x |= (x >> 1)     -- flood by 1
+    x |= (x >> 2)     -- flood by 2
+    x |= (x >> 4)     -- flood by 4
+    x |= (x >> 8)     -- flood by 8
+    x |= (x >> 16)    -- flood by 16
+#+end_example
+
+After these five steps, all bits from the original highest set bit
+down to bit 0 are set to 1.
+
+For =flp2=: subtract half the flooded value: =x - (x >> 1)=.
+
+For =clp2=: subtract 1 from =x= first (so an exact power of 2 maps
+to itself), flood, then add 1.
+
+For =floorLog2=: Warren gives a binary search approach that checks
+progressively smaller halves of the word.
+
+* Why These Matter
+
+Power-of-2 rounding appears throughout systems programming:
+
+- *Memory allocators* round requested sizes up to the next power of 2
+  for efficient buddy allocation.
+- *Hash tables* use power-of-2 sizes so that modulo can be computed
+  with a single AND instruction instead of expensive division.
+- *Buffer sizing* in I/O systems and ring buffers requires power-of-2
+  alignment.
+- *Floor log base 2* tells you the position of the most significant
+  bit --- used in priority schemes, floating point construction, and
+  compression algorithms.
+
+* Formulas at a Glance
+
+| Operation              | Technique                                |
+|------------------------+------------------------------------------|
+| Round up (=clp2=)      | Subtract 1, flood rightward, add 1      |
+| Round down (=flp2=)    | Flood rightward, subtract half           |
+| Floor log2             | Binary search: check top half, then quarters, ... |
+
+* Implementation Files
+
+| File                  | Functions                                         | Section |
+|-----------------------+---------------------------------------------------+---------|
+| =round_to_power.zig=  | roundUpToPow2, roundDownToPow2, floorLog2        | 3-2     |
+
+* References
+
+- Hacker's Delight, 2nd Edition, Chapter 3: "Power-of-2 Boundaries"
+  - Section 3-2: "Rounding Up/Down to a Power of 2" (pp. 59-66)

@@ -1,0 +1,455 @@
+#+TITLE: Algorithms Visually -- Bits, Nibbles, Bytes & Hex
+#+AUTHOR: Algorithms Visually
+#+STARTUP: showall
+#+OPTIONS: toc:2
+
+* Part 1: Bits and Bit Manipulation
+
+Understanding the fundamental building blocks of how computers represent numbers is
+absolutely essential for /Hacker's Delight/, which delves into the delightful intricacies
+of manipulating these very bits. The book itself sets the stage by defining its notation
+and how it treats computer arithmetic, where "operands are bit strings, or bit vectors,
+of some definite fixed length" (Hacker's Delight 2nd Ed., p. 13).
+
+Let's break down these core concepts step-by-step, as if we're uncovering the secrets of
+how computers think.
+
+** 1. Bits: The Smallest Piece of Information
+
+Imagine a simple light switch. It can be in one of two states: *on* or *off*.
+In the world of computers, this "on" or "off" state is represented by a *bit*
+(short for /binary digit/).
+
+- ~0~ usually means "off" or "false"
+- ~1~ usually means "on" or "true"
+
+A single bit is the smallest unit of information a computer can store. It's like
+the atom of digital data.
+
+** 2. Bytes: Grouping Bits Together
+
+While a single bit is useful, it can only represent two things. To represent more
+complex information, we group bits together. The most common grouping is a *byte*.
+A byte is a collection of *8 bits*.
+
+Think of it like having 8 light switches in a row. Each switch can be on or off
+independently. With 8 switches, you can create many more patterns than with just one.
+
+/Hacker's Delight/ defines several common bit lengths:
+
+| Name       | Size    |
+|------------+---------|
+| Bit        | 1 bit   |
+| Nibble     | 4 bits  |
+| Byte       | 8 bits  |
+| Halfword   | 16 bits |
+| Word       | 32 bits |
+| Doubleword | 64 bits |
+
+*Word (32 bits) is the default word size the book uses unless specified otherwise.*
+
+(Hacker's Delight 2nd Ed., p. 14)
+
+** 3. Number Systems: Different Ways to Count
+
+We humans usually count in *base-10*, also known as the /decimal/ system.
+It uses 10 digits (0--9) and each position represents a power of 10. For example:
+
+#+begin_example
+  123 (base 10) = (1 x 10^2) + (2 x 10^1) + (3 x 10^0)
+                = 100 + 20 + 3
+                = 123
+#+end_example
+
+Computers, however, primarily use *base-2* (binary). But we also use *octal* (base-8)
+and *hexadecimal* (base-16) as convenient shorthand for representing binary numbers.
+
+Let's look at each:
+
+*** a. Binary (Base-2)
+
+Binary uses only two digits: ~0~ and ~1~. Each position represents a power of 2.
+
+**** Example: Converting Binary to Decimal
+
+Let's take the binary number =1011= (base 2).
+
+We number bits from the right, starting at bit 0 (Hacker's Delight 2nd Ed., p. 13).
+
+| Bit position | Calculation   | Value |
+|--------------+---------------+-------|
+| Bit 0        | 1 x 2^0 = 1  |     1 |
+| Bit 1        | 1 x 2^1 = 2  |     2 |
+| Bit 2        | 0 x 2^2 = 0  |     0 |
+| Bit 3        | 1 x 2^3 = 8  |     8 |
+|--------------+---------------+-------|
+| Total        |               |    11 |
+
+Adding these up: 8 + 0 + 2 + 1 = 11 (decimal).
+
+So, =1011= (base 2) = 11 (base 10).
+
+*** b. Octal (Base-8)
+
+Octal uses eight digits: 0, 1, 2, 3, 4, 5, 6, 7. Each position represents a power of 8.
+
+It's useful because each octal digit can represent exactly *3 bits* (2^3 = 8).
+
+**** Example: Converting Binary to Octal
+
+Let's take =101101= (base 2). We group bits from the right in sets of three:
+
+#+begin_example
+  101  101
+   5    5
+#+end_example
+
+Each group of 3 bits converts independently:
+
+- =101= (base 2) = (1 x 2^2) + (0 x 2^1) + (1 x 2^0) = 4 + 0 + 1 = 5 (octal)
+- =101= (base 2) = (1 x 2^2) + (0 x 2^1) + (1 x 2^0) = 4 + 0 + 1 = 5 (octal)
+
+So, =101101= (base 2) = =55= (base 8).
+
+**** Example: Converting Octal to Decimal
+
+Let's convert =55= (base 8):
+
+#+begin_example
+  (5 x 8^1) + (5 x 8^0) = (5 x 8) + (5 x 1) = 40 + 5 = 45 (decimal)
+#+end_example
+
+*** c. Hexadecimal (Base-16)
+
+Hexadecimal, or "hex," uses sixteen symbols: 0--9 and A--F.
+
+| Hex digit | Decimal value |
+|-----------+---------------|
+| A         |            10 |
+| B         |            11 |
+| C         |            12 |
+| D         |            13 |
+| E         |            14 |
+| F         |            15 |
+
+Each position represents a power of 16. Hex is extremely common in computer science
+because each hex digit can represent exactly *4 bits* (2^4 = 16). This makes it
+a very compact way to write binary numbers.
+
+/Hacker's Delight/ uses hexadecimal notation frequently, for example, ~0x80000000~
+(Hacker's Delight 2nd Ed., p. 13). The =0x= prefix is a common convention in C-like
+languages (C, Go, Zig) to denote a hexadecimal number.
+
+**** Example: Converting Binary to Hexadecimal
+
+Let's take =10110110= (base 2). We group bits from the right in sets of four:
+
+#+begin_example
+  1011  0110
+   B     6
+#+end_example
+
+Each group of 4 bits converts independently:
+
+- =1011= (base 2) = (1 x 2^3) + (0 x 2^2) + (1 x 2^1) + (1 x 2^0) = 8 + 0 + 2 + 1 = 11 (decimal) = B (hex)
+- =0110= (base 2) = (0 x 2^3) + (1 x 2^2) + (1 x 2^1) + (0 x 2^0) = 0 + 4 + 2 + 0 = 6 (decimal) = 6 (hex)
+
+So, =10110110= (base 2) = =0xB6= in code.
+
+**** Example: Converting Hexadecimal to Decimal
+
+Let's convert =B6= (base 16):
+
+#+begin_example
+  (B x 16^1) + (6 x 16^0) = (11 x 16) + (6 x 1) = 176 + 6 = 182 (decimal)
+#+end_example
+
+** 4. Signed vs. Unsigned Integers: How We Interpret the Bits
+
+This is a crucial distinction. The bits themselves are just 0s and 1s. /How we
+interpret/ those bits determines if the number is *signed* (can be positive or negative)
+or *unsigned* (always non-negative).
+
+/Hacker's Delight/ explicitly states that "Unless specified otherwise, the word size is
+32 bits, and signed integers are represented in two's-complement form"
+(Hacker's Delight 2nd Ed., p. 13). This means understanding two's complement is vital
+for the book's examples.
+
+*** a. Unsigned Integers
+
+*Definition:* All bits in the number are used to represent the magnitude (value) of the
+number. The number is always zero or positive.
+
+*Range:* For an N-bit unsigned integer, the smallest value is 0 and the largest is
+2^N - 1.
+
+| Bit width | Range                    |
+|-----------+--------------------------|
+| 8-bit     | 0 to 255                 |
+| 32-bit    | 0 to ~4.29 billion       |
+
+*Example (8-bit unsigned):*
+
+=11111111= (base 2) = 255 (decimal) --- all bits are 1, so it's the maximum value.
+
+*** b. Signed Integers (Two's Complement)
+
+*Definition:* One bit is designated as the /sign bit/. In two's complement, this is the
+*most significant bit (MSB)* --- the leftmost bit.
+
+- If the MSB is ~0~, the number is positive or zero.
+- If the MSB is ~1~, the number is negative.
+
+The remaining N - 1 bits represent the magnitude, but in a special way for negative
+numbers.
+
+*Why Two's Complement?* It's brilliant because it simplifies arithmetic operations.
+Addition and subtraction work the same way for both positive and negative numbers,
+without needing separate logic for signs.
+
+*Range:* For an N-bit signed integer (two's complement):
+
+- Smallest (most negative) value: -2^(N-1)
+- Largest (most positive) value:   2^(N-1) - 1
+
+| Bit width | Range                              |
+|-----------+------------------------------------|
+| 8-bit     | -128 to 127                        |
+| 32-bit    | ~-2.14 billion to ~2.14 billion    |
+
+**** How to Represent Negative Numbers (Two's Complement)
+
+Let's use an 8-bit example:
+
+***** Represent a positive number
+
+To represent 5 (decimal): =00000101= (base 2) --- MSB is 0, so it's positive.
+
+***** Represent a negative number (e.g., -5)
+
+*Step 1:* Start with the positive equivalent:
+
+#+begin_example
+  5 = 00000101
+#+end_example
+
+*Step 2:* Invert all the bits (change 0s to 1s, and 1s to 0s). This is called the
+"one's complement."
+
+#+begin_example
+  00000101  -->  11111010
+#+end_example
+
+*Step 3:* Add 1 to the inverted result.
+
+#+begin_example
+    11111010
+  +        1
+  ----------
+    11111011
+#+end_example
+
+So, -5 in 8-bit two's complement is =11111011= (base 2).
+Notice the MSB is 1, indicating it's negative.
+
+**** Converting a Two's Complement Negative Number Back to Decimal
+
+Let's take =11111011= (base 2):
+
+*Step 1:* Since the MSB is 1, it's negative.
+
+*Step 2:* Invert all bits:
+
+#+begin_example
+  11111011  -->  00000100
+#+end_example
+
+*Step 3:* Add 1:
+
+#+begin_example
+    00000100
+  +        1
+  ----------
+    00000101
+#+end_example
+
+*Step 4:* Convert this positive binary number to decimal: =00000101= = 5.
+
+*Step 5:* Since we started with a negative number, the result is *-5*.
+
+** 5. Quick Summary Table
+
+| System      | Base | Digits/Symbols | Bit Grouping | Prefix (C/Go/Zig) | Example              |
+|-------------+------+----------------+--------------+--------------------+----------------------|
+| Decimal     |   10 | 0--9           | N/A          | N/A                | 182                  |
+| Binary      |    2 | 0--1           | N/A          | =0b=               | 0b10110110           |
+| Octal       |    8 | 0--7           | 3 bits       | =0o= (Go, Zig)    | 0o266 (= 182)        |
+| Hexadecimal |   16 | 0--9, A--F     | 4 bits       | =0x=               | 0xB6 (= 182)         |
+
+** 6. Practice Exercise
+
+To make sure we've got a solid grasp before moving on, try this conversion:
+
+#+begin_quote
+What is the 8-bit binary representation of -10 (decimal) using two's complement?
+#+end_quote
+
+*Hint:* Follow the three steps from Section 4b:
+1. Write 10 (decimal) in binary
+2. Invert all bits (one's complement)
+3. Add 1
+
+#+begin_example
+  Step 1:  10 = 00001010
+  Step 2:  Invert --> 11110101
+  Step 3:  Add 1  --> 11110110
+
+  Answer: -10 in 8-bit two's complement = 11110110
+#+end_example
+
+** 7. Computer Words: The CPU's Natural Unit of Data
+
+Now that we have a solid foundation in how individual bits encode numbers, let's zoom
+out and look at how processors organize these bits into fixed-width groups called
+"words" --- and why that matters for every algorithm in /Hacker's Delight/.
+
+Understanding the concept of a "computer word" and its evolution helps us appreciate
+why certain operations in /Hacker's Delight/ are designed the way they are. It touches
+on a fundamental aspect of computer architecture that directly influences the bit
+manipulation "tricks" found throughout the book.
+
+*** What is a Computer Word?
+
+A *computer word* is the natural unit of data used by a particular processor design.
+Think of it as the "default chunk" of bits that the CPU (Central Processing Unit)
+likes to work with at one time.
+
+As we noted in Section 2, /Hacker's Delight/ defines a "word" as 32 bits
+(Hacker's Delight 2nd Ed., p. 14). More broadly, a word typically refers to:
+
+- *The size of registers:* The small, high-speed storage locations within the CPU
+  that hold data for immediate processing.
+- *The size of data transferred in a single operation:* How many bits the CPU can
+  fetch from memory or write to memory in one go.
+- *The size of an addressable unit:* While memory is often byte-addressable, the
+  width of the address bus and data bus often aligns with the word size.
+
+Essentially, the word size dictates how much information the CPU can chew on
+simultaneously.
+
+*** Why 32-bit in /Hacker's Delight/?
+
+/Hacker's Delight/ explicitly states: "Unless specified otherwise, the word size is
+32 bits, and signed integers are represented in two's-complement form"
+(Hacker's Delight 2nd Ed., p. 13).
+
+There are a few key reasons for this default:
+
+- *Historical Context:* The first edition was published in 2002, and the second in
+  2012. During this era, 32-bit processors (Intel Pentium series, AMD Athlon, and many
+  embedded systems) were incredibly prevalent and had been the dominant architecture
+  for personal computers for over a decade. Many operating systems (e.g., Windows XP,
+  early Linux distributions) were primarily 32-bit. A vast amount of existing software
+  was compiled for 32-bit architectures.
+
+- *Pedagogical Clarity:* Using a fixed, common word size like 32 bits simplifies the
+  presentation of the bit-manipulation algorithms. It provides a concrete context for
+  the examples without getting bogged down in discussions about variable word lengths.
+  The principles, as the book notes, are often easily adaptable to other sizes
+  (Hacker's Delight 2nd Ed., p. 11).
+
+- *Relevance to Embedded Systems:* Even today, many embedded systems, microcontrollers,
+  and specialized processors still operate primarily on 32-bit words due to cost, power
+  consumption, and specific application requirements.
+
+*** Evolution of Computer Words: A Journey Through Time
+
+The size of a computer word has evolved significantly as technology has advanced and
+computational needs have grown.
+
+**** 1. Early Days: 4-bit, 8-bit, 12-bit, 16-bit (1970s -- early 1980s)
+
+- *4-bit:* Very early microprocessors (like the Intel 4004, 1971) were 4-bit. These
+  were extremely limited but revolutionary for their time.
+
+- *8-bit:* Processors like the Intel 8080, Zilog Z80, and MOS 6502 (used in Apple II,
+  Commodore 64) became popular in the late 1970s and early 1980s. An 8-bit word could
+  address 2^8 = 256 memory locations directly, which was very restrictive for larger
+  programs. To access more memory, techniques like /bank switching/ were used.
+
+- *12-bit / 16-bit:* Some minicomputers and early microprocessors used 12-bit (e.g.,
+  PDP-8) or 16-bit words (e.g., Intel 8086/80286, Motorola 68000, PDP-11). A 16-bit
+  word could address 2^16 = 65,536 bytes (64 KB) of memory directly. This was a
+  significant leap, but still limited as programs grew larger.
+
+| Era         | Word size | Addressable memory | Notable processors               |
+|-------------+-----------+--------------------+----------------------------------|
+| Early 1970s | 4-bit     | 16 nibbles         | Intel 4004                       |
+| Late 1970s  | 8-bit     | 256 bytes          | Intel 8080, Zilog Z80, MOS 6502  |
+| Early 1980s | 16-bit    | 64 KB              | Intel 8086/80286, Motorola 68000 |
+
+**** 2. The Rise of 32-bit (Mid-1980s -- early 2000s)
+
+The introduction of processors like the Intel 80386 (1985) and Motorola 68020/030/040
+marked the beginning of the 32-bit era for personal computers.
+
+- *Key Advantage --- Addressing Space:* A 32-bit word could address 2^32 bytes, which
+  is approximately *4 gigabytes (GB)* of memory. This was a massive amount at the time
+  and allowed for much more complex operating systems and applications.
+
+- *Dominance:* 32-bit architectures became the standard for desktop computers, servers,
+  and many embedded systems throughout the 1990s and early 2000s. The algorithms in
+  /Hacker's Delight/ are very much optimized for this common architecture.
+
+**** 3. The Shift to 64-bit (Early 2000s -- present)
+
+As memory became cheaper and applications more demanding (especially for large datasets,
+scientific computing, and virtualization), 4 GB of addressable RAM started to become a
+bottleneck.
+
+- *Introduction:* Early 64-bit processors emerged in the late 1990s (e.g., DEC Alpha,
+  Itanium), but it was AMD's Opteron and Athlon 64 (2003) that popularized 64-bit
+  computing in the mainstream PC market, followed by Intel's EM64T (now Intel 64).
+
+- *Key Advantage --- Vast Addressing Space:* A 64-bit word can address 2^64 bytes,
+  which is approximately *18 exabytes (EB)* of memory. This is practically limitless
+  for current computing needs, removing the 4 GB RAM barrier.
+
+- *Modern Standard:* Today, virtually all desktop computers, laptops, servers, and even
+  many smartphones use 64-bit processors and operating systems.
+
+**** 4. Beyond 64-bit? (Specialized Applications)
+
+While 64-bit is the general-purpose standard, some specialized processors or
+architectures might use wider data paths (e.g., 128-bit) for specific tasks, such as
+high-performance computing, graphics processing units (GPUs), or vector processing units
+(VPUs). However, these are not typically referred to as the "word size" in the same
+general-purpose CPU sense.
+
+**** Summary: Word Size Through the Decades
+
+| Era           | Word size | Max addressable memory | Milestone                          |
+|---------------+-----------+------------------------+------------------------------------|
+| 1971          | 4-bit     | 16 nibbles             | Intel 4004                         |
+| Late 1970s    | 8-bit     | 256 bytes              | Apple II, Commodore 64             |
+| Early 1980s   | 16-bit    | 64 KB                  | IBM PC (8086)                      |
+| Mid-1980s     | 32-bit    | 4 GB                   | Intel 80386                        |
+| Early 2000s   | 64-bit    | 18 EB                  | AMD Opteron / Athlon 64            |
+
+*** Why the /Hacker's Delight/ Tricks Remain Relevant
+
+Even though 64-bit is now dominant, the techniques and algorithms in /Hacker's Delight/
+are far from obsolete:
+
+- *Fundamental Principles:* The core logic of bit manipulation (AND, OR, XOR, shifts,
+  two's complement arithmetic) remains exactly the same, regardless of word size. You
+  simply apply them to a wider set of bits.
+
+- *Adaptability:* As the book mentions, most tricks are "easily adapted to machines with
+  other register sizes" (Hacker's Delight 2nd Ed., p. 11). If an algorithm works for
+  32 bits, it usually translates directly to 64 bits by changing the integer types
+  (e.g., =int32_t= to =int64_t= in C, =u32= to =u64= in Zig).
+
+- *Performance:* The book's emphasis on "making every cycle count"
+  (Hacker's Delight 2nd Ed., p. 12) through branch-free, bitwise operations is still
+  paramount in performance-critical code, regardless of the word width.

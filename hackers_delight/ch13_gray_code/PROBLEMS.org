@@ -1,0 +1,185 @@
+#+TITLE: Chapter 13 --- Gray Code
+#+SUBTITLE: Hacker's Delight, 2nd Edition --- Sections 13-1 through 13-4
+#+AUTHOR: Henry S. Warren, Jr.
+
+* The Problem
+
+Warren opens the chapter with a direct question:
+
+#+begin_quote
+"Is it possible to cycle through all 2^n combinations of n bits by
+changing only one bit at a time? The answer is 'yes,' and this is
+the defining property of Gray codes."
+--- Warren, p. 293
+#+end_quote
+
+A Gray code is an encoding of integers such that a Gray-coded integer
+and its successor differ in *exactly one bit position*. This means
+stepping from any value to the next requires flipping only a single
+bit.
+
+** Convert Binary to Gray Code
+
+Given a standard binary integer, produce the corresponding reflected
+binary Gray code value.
+
+#+begin_example
+    Binary  Gray
+    0000    0000
+    0001    0001
+    0010    0011
+    0011    0010
+    0100    0110
+    0101    0111
+    0110    0101
+    0111    0100
+    1000    1100
+#+end_example
+
+Warren gives the conversion formula directly:
+
+#+begin_example
+    G = B ^ (B >> 1)
+#+end_example
+
+This is a single expression --- two instructions.
+
+** Convert Gray Code to Binary
+
+Given a Gray-coded integer, recover the original binary value. This
+is harder than the forward direction.
+
+Warren presents the *parallel prefix XOR* method:
+
+#+begin_example
+    B = G ^ (G >> 1)
+    B = B ^ (B >> 2)
+    B = B ^ (B >> 4)
+    B = B ^ (B >> 8)
+    B = B ^ (B >> 16)
+#+end_example
+
+Warren notes this requires =2 * ceil(log2(n))= instructions for an
+=n=-bit word, and connects it to an earlier result:
+
+#+begin_quote
+"We have already seen this formula in 'Computing the Parity of a
+Word' on page 96."
+--- Warren, p. 295
+#+end_quote
+
+* Construction: The Reflected Binary Gray Code
+
+Warren explains the recursive construction. Start with the 1-bit code:
+
+#+begin_example
+    0
+    1
+#+end_example
+
+Reflect this list about a horizontal axis and prefix with 0s and 1s:
+
+#+begin_example
+    00
+    01
+    11     <-- reflected
+    10     <-- reflected
+#+end_example
+
+Repeat to build the 3-bit code:
+
+#+begin_example
+    000
+    001
+    011
+    010
+    110    <-- reflected
+    111    <-- reflected
+    101    <-- reflected
+    100    <-- reflected
+#+end_example
+
+Warren observes three properties of this construction:
+
+1. Each of the =2^n= bit combinations appears *once and only once*
+2. Only *one bit changes* going from one entry to the next
+3. Only one bit changes cycling from the *last entry back to the first*
+   (this makes it "cyclic")
+
+* History and Applications (from Warren)
+
+** Origin
+
+#+begin_quote
+"Gray codes are named after Frank Gray, a physicist at Bell Telephone
+Laboratories, who in the 1930s invented the method we now use for
+broadcasting color TV in a way that's compatible with the
+black-and-white transmission and reception methods then in existence;
+that is, when the color signal is received by a black-and-white set,
+the picture appears in shades of gray."
+--- Warren, p. 297
+#+end_quote
+
+** Position Sensors and Rotary Encoders
+
+#+begin_quote
+"Gray codes are used in position sensors. A strip of material is
+made with conducting and nonconducting areas, corresponding to the
+1's and 0's of a Gray-coded integer. Each column has a conducting
+wire brush positioned to read it out."
+--- Warren, p. 297
+#+end_quote
+
+The key advantage: if a brush is positioned on the dividing line
+between two quantized positions, it can only misread *one bit* at
+most. With standard binary, multiple bits change between adjacent
+values, so a brush on the boundary could produce a wild reading.
+
+Warren explains that the strip can be arranged as concentric circular
+tracks to form a rotational position sensor (see Figure 13-3 in the
+book).
+
+** Puzzles and Mathematics
+
+#+begin_quote
+"Martin Gardner discusses applications of Gray codes involving the
+Chinese ring puzzle, the Tower of Hanoi puzzle, and Hamiltonian paths
+through graphs that represent hypercubes."
+--- Warren, p. 297
+#+end_quote
+
+** Single Track Gray Codes
+
+Warren discusses a more advanced topic: *single track Gray codes*
+(STGCs), where only one ring of conducting/nonconducting areas is
+needed, with brushes spaced around the ring. These enable more
+compact rotational position sensors.
+
+* Formulas at a Glance
+
+| Operation           | Formula                          | Instructions |
+|---------------------+----------------------------------+--------------|
+| Binary to Gray      | =G = B ^ (B >> 1)=              |            2 |
+| Gray to Binary      | Parallel prefix XOR (5 steps)   |           10 |
+
+* Properties
+
+- *Consecutive values differ by exactly one bit* --- defining property
+- *The code is cyclic* --- the last value and first value also differ by one bit
+- *Roundtrip* --- =grayToBinary(binaryToGray(x)) == x= for all =x=
+- *Even parity rule* --- if =x= is even, =G(x)= has an even number of 1-bits;
+  if =x= is odd, =G(x)= has an odd number of 1-bits
+
+* Implementation Files
+
+| File             | Functions                      | Section |
+|------------------+--------------------------------+---------|
+| =gray_code.zig=   | binaryToGray, grayToBinary    | 13-1    |
+
+* References
+
+- Hacker's Delight, 2nd Edition, Chapter 13: "Gray Code"
+  - Section 13-1: "Gray Code" (pp. 311-314)
+  - Section 13-2: "Incrementing a Gray-Coded Integer" (pp. 314-315)
+  - Section 13-3: "Negabinary Gray Code" (p. 316)
+  - Section 13-4: "Brief History and Applications" (pp. 316-318)

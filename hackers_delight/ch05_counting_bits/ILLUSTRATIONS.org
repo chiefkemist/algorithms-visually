@@ -1,0 +1,191 @@
+#+TITLE: Chapter 5 --- Illustrations
+#+SUBTITLE: Step-by-step visual walkthroughs of each algorithm
+
+* Population Count (Hamming Weight): Divide and Conquer
+
+** The Idea
+
+Count 1-bits by summing in parallel at progressively larger scales:
+single bits -> pairs -> nibbles -> bytes -> halfwords -> word.
+
+** Walkthrough: =popcount(0b10110011)= -> =5=
+
+For clarity, showing only the low 8 bits (the same process applies to
+all 32 bits simultaneously).
+
+*** Step 1: Sum adjacent single bits into 2-bit counts
+
+Subtract every other bit from the shifted value. The constant
+=0x55555555= (binary =...01010101=) selects alternating bits.
+
+#+begin_example
+  Formula: x = x - ((x >> 1) & 0x55555555)
+
+  x          = 1 0 1 1 0 0 1 1
+  x >> 1     = 0 1 0 1 1 0 0 1
+  & 01010101 = 0 1 0 1 0 0 0 1
+
+  x - result:
+    10 11 00 11
+  - 01 01 00 01
+    ── ── ── ──
+    01 10 00 10
+
+  Read as 2-bit groups: 01  10  00  10
+  Meaning:               1   2   0   2   (bit counts per pair)
+#+end_example
+
+*** Step 2: Sum adjacent 2-bit counts into 4-bit counts
+
+#+begin_example
+  Formula: x = (x & 0x33333333) + ((x >> 2) & 0x33333333)
+
+  x           = 01 10 00 10
+  x & 0011... = 00 10 00 10    (even pairs)
+  x >> 2      = 00 01 10 00
+  & 0011...   = 00 01 00 00    (odd pairs)
+
+  Sum:  0010 + 0001 = 0011     0010 + 0000 = 0010
+
+  Result as 4-bit groups: 0011  0010
+  Meaning:                  3     2   (bit counts per nibble)
+#+end_example
+
+*** Step 3: Sum adjacent 4-bit counts into 8-bit counts
+
+#+begin_example
+  Formula: x = (x + (x >> 4)) & 0x0F0F0F0F
+
+  x          = 0011 0010
+  x >> 4     = 0000 0011
+  x + (x>>4) = 0011 0101
+  & 0x0F...  = 0000 0101
+
+  Result: 00000101 = 5    (total bits in this byte)
+#+end_example
+
+*** Steps 4-5: Sum bytes into halfwords into word
+
+For our 8-bit example the answer is already in the low byte: *5*.
+
+For a full 32-bit word, two more additions combine the four byte
+counts into a single total, masked with =0x3F= (max 32).
+
+** Full 32-bit example: =popcount(0xB3B3B3B3)=
+
+#+begin_example
+  0xB3B3B3B3 = 1011 0011 1011 0011 1011 0011 1011 0011
+
+  Step 1 (pairs):    01 10 00 10  01 10 00 10  01 10 00 10  01 10 00 10
+  Step 2 (nibbles):  0011 0010    0011 0010    0011 0010    0011 0010
+  Step 3 (bytes):    00000101     00000101     00000101     00000101
+  Step 4 (halves):   0000 0000 0000 1010       0000 0000 0000 1010
+  Step 5 (word):     0000 0000 0000 0000  0000 0000 0001 0100
+
+  Final & 0x3F = 20
+
+  Check: each 0xB3 = 10110011 has 5 set bits.  5 * 4 = 20.
+#+end_example
+
+* Counting Leading Zeros: Binary Search
+
+** The Idea
+
+Narrow down the position of the highest set bit by checking half
+the word at a time, like binary search.
+
+** Walkthrough: =nlz(0x000000FF)= -> =24=
+
+#+begin_example
+  x = 0000 0000 0000 0000 0000 0000 1111 1111
+  n = 0
+
+  Check: x <= 0x0000FFFF?   (are top 16 bits zero?)
+         0xFF <= 0xFFFF      yes!
+         n = 16, x <<= 16
+         x = 0000 0000 1111 1111 0000 0000 0000 0000
+
+  Check: x <= 0x00FFFFFF?   (are top 8 bits zero?)
+         yes!
+         n = 24, x <<= 8
+         x = 1111 1111 0000 0000 0000 0000 0000 0000
+
+  Check: x <= 0x0FFFFFFF?   (are top 4 bits zero?)
+         0xFF000000 > 0x0FFFFFFF     no.
+
+  Check: x <= 0x3FFFFFFF?   (are top 2 bits zero?)
+         0xFF000000 > 0x3FFFFFFF     no.
+
+  Check: x <= 0x7FFFFFFF?   (is top bit zero?)
+         0xFF000000 > 0x7FFFFFFF     no.
+
+  Result: n = 24
+#+end_example
+
+** Visual: what the binary search finds
+
+#+begin_example
+  0000 0000 0000 0000 0000 0000 1111 1111
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |<--- 24 leading zeros --->|<- bits ->|
+
+  Step 1: "Are the top 16 bits all zero?" --> Yes (n += 16, shift left)
+  Step 2: "Are the top 8 bits all zero?"  --> Yes (n += 8, shift left)
+  Step 3: "Are the top 4 bits all zero?"  --> No (highest bit is in top 4)
+  Step 4: "Are the top 2 bits all zero?"  --> No
+  Step 5: "Is the top bit zero?"          --> No
+
+  Answer: 24
+#+end_example
+
+* Counting Trailing Zeros: =ntz(x) = pop(~x & (x - 1))=
+
+** The Idea
+
+Create a mask with 1s in every trailing-zero position, then count
+those 1s using popcount.
+
+** Walkthrough: =ntz(0b01011000)= -> =3=
+
+#+begin_example
+  x       = 0101 1000
+  x - 1   = 0101 0111     (borrow ripples through trailing zeros)
+  ~x      = 1010 0111     (complement)
+
+  ~x & (x-1):
+    ~x    = 1010 0111
+    x-1   = 0101 0111
+             ─────────
+    result = 0000 0111     (1s exactly where the trailing zeros were)
+                 ^^^
+                 three trailing zeros
+
+  pop(0000 0111) = 3
+#+end_example
+
+** Why it works
+
+#+begin_example
+  x       = ...1 0 0 0    (rightmost 1 followed by k zeros)
+  x - 1   = ...0 1 1 1    (borrow flips the rightmost 1 and fills below)
+  ~x      = ...0 1 1 1    (complement flips the rightmost 1 too)
+
+  ~x & (x-1):
+    The rightmost 1 of x: ~x has 0 here, so it's masked out.
+    The bits above: ~x and (x-1) differ, so ANDing gives 0.
+    The trailing zeros: both ~x and (x-1) have 1s here!
+
+  Result: exactly k ones in the trailing positions.
+#+end_example
+
+** Another example: =ntz(12)= -> =2=
+
+#+begin_example
+  x = 12  = 0000 1100
+  x - 1   = 0000 1011
+  ~x      = 1111 0011
+
+  ~x & (x-1) = 0000 0011    (two 1-bits = two trailing zeros)
+
+  pop(0000 0011) = 2
+#+end_example

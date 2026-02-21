@@ -1,0 +1,204 @@
+#+TITLE: Chapter 2 --- Basics
+#+SUBTITLE: Hacker's Delight, 2nd Edition --- Sections 2-1 and 2-4
+#+AUTHOR: Henry S. Warren, Jr.
+
+* The Problems
+
+** Section 2-1: Manipulating Rightmost Bits
+
+Warren presents a collection of short formulas for manipulating the
+rightmost bits of a word. These are the fundamental building blocks
+upon which many later chapters depend.
+
+#+begin_quote
+"Some of the formulas in this section find application in later chapters."
+--- Warren, p. 11
+#+end_quote
+
+The central question: given a computer word =x=, how do you
+surgically manipulate its rightmost 1-bit or 0-bit using only basic
+bitwise operations --- *without loops, without branches*?
+
+*** Problem 1: Turn Off the Rightmost 1-Bit
+
+Given a word =x=, produce a result where the rightmost (least
+significant) 1-bit has been turned off, and all other bits are
+unchanged.
+
+#+begin_example
+    x        = 0101 1000
+    result   = 0101 0000
+                    ^--- this bit was turned off
+#+end_example
+
+Warren notes this can be used to determine if an unsigned integer is
+a power of 2 or is 0: "if the result is 0, then =x= is a power of 2
+or is 0."
+
+*** Problem 2: Turn On the Rightmost 0-Bit
+
+Given a word =x=, produce a result where the rightmost 0-bit has
+been turned on, and all other bits are unchanged.
+
+#+begin_example
+    x        = 1010 0111
+    result   = 1010 1111
+                    ^--- this bit was turned on
+#+end_example
+
+*** Problem 3: Isolate the Rightmost 1-Bit
+
+Given a word =x=, produce a result where *only* the rightmost 1-bit
+of =x= remains --- all other bits are zero.
+
+#+begin_example
+    x        = 0101 1000
+    result   = 0000 1000
+#+end_example
+
+Warren notes this operation is fundamental: it extracts the single
+lowest-order set bit. It is used in Fenwick trees, memory allocators,
+and priority extraction.
+
+*** Problem 4: Isolate the Rightmost 0-Bit
+
+Given a word =x=, produce a result with a single 1-bit in the
+position where =x= had its rightmost 0.
+
+#+begin_example
+    x        = 1010 0111
+    result   = 0000 1000
+#+end_example
+
+*** Problem 5: Create a Mask from the Rightmost 1-Bit
+
+Given a word =x=, produce a mask that has 1-bits from the position of
+the rightmost 1-bit down through all trailing zeros.
+
+#+begin_example
+    x        = 0101 1000
+    result   = 0000 1111
+#+end_example
+
+*** Problem 6: Turn Off Trailing 1-Bits
+
+Given a word =x=, turn off all trailing 1-bits (contiguous 1-bits at
+the least significant end).
+
+#+begin_example
+    x        = 1010 0111
+    result   = 1010 0000
+#+end_example
+
+Warren observes this can test whether =x= has the form =2^n - 1=:
+"the result is 0 if and only if =x= is of the form =2^n - 1=."
+
+*** Problem 7: Turn On Trailing 0-Bits
+
+Given a word =x=, turn on all trailing 0-bits.
+
+#+begin_example
+    x        = 1010 1000
+    result   = 1010 1111
+#+end_example
+
+*** Problem 8: Power-of-2 Test
+
+Determine whether a given unsigned integer =x= is an exact power of 2
+(i.e., has exactly one bit set). The value 0 is *not* considered a
+power of 2.
+
+This is a direct application of Problem 1.
+
+*** Why These Matter
+
+Warren introduces these formulas because they are *the primitives*
+from which more complex bit manipulation algorithms are built. They
+appear again and again in later chapters --- popcount, leading zeros,
+power-of-2 rounding, and more all rely on these rightmost-bit tricks.
+
+The key constraint: each solution must be a *single expression* using
+only =&=, =|=, =^=, =~=, =+=, and =-=. No conditionals, no loops.
+
+** Section 2-4: Absolute Value Function
+
+Warren addresses the problem of computing the absolute value of a
+signed integer *without any branches*.
+
+#+begin_quote
+"If your machine does not have an instruction for computing the
+absolute value, this computation can usually be done in three or
+four branch-free instructions."
+--- Warren, p. 18
+#+end_quote
+
+*** Problem 9: Branchless Absolute Value
+
+Compute =|x|= for a signed 32-bit integer =x= using only arithmetic
+and bitwise operations. No =if=, no ternary, no branches.
+
+The key insight from Warren: arithmetic right shift of a signed integer
+by 31 positions produces a *mask* that is:
+- =0x00000000= (all zeros) for non-negative numbers
+- =0xFFFFFFFF= (all ones) for negative numbers
+
+This mask can then be used with XOR and subtraction to flip the sign
+without branching.
+
+*** Problem 10: Branchless Negative Absolute Value
+
+Compute =-|x|= for a signed 32-bit integer =x= --- always returning a
+non-positive result.
+
+Warren observes that =nabs= has an advantage over =abs=: it is
+well-defined for the most negative number (=INT_MIN=), whereas
+=abs(INT_MIN)= overflows in two's complement.
+
+*** Why Branchless?
+
+Warren emphasizes throughout the book:
+
+#+begin_quote
+"Branch-free code is favored, because on many computers, branches
+slow down instruction fetching and inhibit executing instructions
+in parallel."
+--- Warren, Preface
+#+end_quote
+
+Modern CPUs use deep instruction pipelines and speculative execution.
+A mispredicted branch can cost 10-20 clock cycles. By computing =abs=
+with pure arithmetic, the CPU never needs to predict a branch
+direction.
+
+* Formulas at a Glance
+
+All formulas operate on a 32-bit word =x=:
+
+| Operation                     | Formula (from Warren)     |
+|-------------------------------+---------------------------|
+| Turn off rightmost 1-bit     | =x & (x - 1)=            |
+| Turn on rightmost 0-bit      | =x | (x + 1)=            |
+| Isolate rightmost 1-bit      | =x & (-x)=               |
+| Isolate rightmost 0-bit      | =~x & (x + 1)=           |
+| Mask from rightmost 1-bit    | =x ^ (x - 1)=            |
+| Turn off trailing 1s         | =x & (x + 1)=            |
+| Turn on trailing 0s          | =x | (x - 1)=            |
+| Power-of-2 test              | =x != 0 && x & (x-1)==0= |
+| Branchless abs               | =(x ^ y) - y= where =y = x >> 31=  |
+| Branchless nabs              | =y - (x ^ y)= where =y = x >> 31=  |
+
+* Implementation Files
+
+| File                  | Functions                                 | Section |
+|-----------------------+-------------------------------------------+---------|
+| =rightmost_bits.zig=  | turnOffLowestBit, turnOnLowestZeroBit,   | 2-1     |
+|                       | isolateLowestBit, isolateLowestZeroBit,  |         |
+|                       | maskFromLowestBit, turnOffTrailingOnes,  |         |
+|                       | turnOnTrailingZeros, isPowerOfTwo         |         |
+| =absolute_value.zig=  | branchlessAbs, branchlessNabs            | 2-4     |
+
+* References
+
+- Hacker's Delight, 2nd Edition, Chapter 2: "Basics"
+  - Section 2-1: "Manipulating Rightmost Bits" (pp. 11-15)
+  - Section 2-4: "Absolute Value Function" (pp. 18-19)

@@ -1,0 +1,120 @@
+#+TITLE: Chapter 7 --- Rearranging Bits and Bytes
+#+SUBTITLE: Hacker's Delight, 2nd Edition --- Section 7-1
+#+AUTHOR: Henry S. Warren, Jr.
+
+* The Problem
+
+Warren addresses the problem of reversing the order of bits or bytes
+within a computer word.
+
+#+begin_quote
+"By 'reversing bits' we mean to reflect the contents of a register
+about the middle."
+--- Warren, p. 129
+#+end_quote
+
+** Reversing Bits
+
+Given a 32-bit word, reverse the order of all 32 bits so that bit 0
+becomes bit 31, bit 1 becomes bit 30, and so on.
+
+#+begin_example
+    Before: b31 b30 b29 ... b2 b1 b0
+    After:  b0  b1  b2  ... b29 b30 b31
+
+    reverseBits(0x00000001) = 0x80000000
+    reverseBits(0x0000000F) = 0xF0000000
+    reverseBits(0xAAAAAAAA) = 0x55555555
+#+end_example
+
+** Reversing Bytes
+
+Given a 32-bit word, reverse the order of the four bytes (but leave
+the bits within each byte in their original order).
+
+#+begin_example
+    Before: [byte3] [byte2] [byte1] [byte0]
+    After:  [byte0] [byte1] [byte2] [byte3]
+
+    reverseBytes(0x12345678) = 0x78563412
+    reverseBytes(0x000000FF) = 0xFF000000
+    reverseBytes(0xDEADBEEF) = 0xEFBEADDE
+#+end_example
+
+* The Technique: Divide-and-Conquer Swap
+
+Warren presents an elegant recursive decomposition. For full bit
+reversal, five steps of pairwise swapping at increasing scales:
+
+1. Swap adjacent *single bits* (1-bit groups, mask =0x55555555=)
+2. Swap adjacent *bit pairs* (2-bit groups, mask =0x33333333=)
+3. Swap adjacent *nibbles* (4-bit groups, mask =0x0F0F0F0F=)
+4. Swap adjacent *bytes* (8-bit groups, mask =0x00FF00FF=)
+5. Swap *halfwords* (16-bit groups, mask =0x0000FFFF=)
+
+Each step uses the same pattern: extract the left half with a mask,
+extract the right half with the complementary mask, shift them toward
+each other, and OR them together.
+
+Byte reversal uses only the last two steps (swap bytes, swap
+halfwords), since the bits within each byte stay in place.
+
+* Applications (from Warren)
+
+** Endianness Conversion
+
+#+begin_quote
+"Byte reversal is a necessary operation to convert data between the
+'little-endian' format used by DEC and Intel, and the 'big-endian'
+format used by most other manufacturers."
+--- Warren, p. 129
+#+end_quote
+
+When data is transmitted between machines with different byte
+orderings, every multi-byte value must be byte-swapped. Network
+protocols (TCP/IP) use big-endian ("network byte order"), so
+little-endian machines must reverse bytes for every packet header
+field.
+
+** Fast Fourier Transform (FFT)
+
+#+begin_quote
+"The Fast Fourier Transform (FFT) algorithm employs an integer i and
+its bit reversal rev(i) in a loop."
+--- Warren, p. 129
+#+end_quote
+
+The Cooley-Tukey FFT algorithm requires a "bit-reversal permutation"
+step where array elements are reordered according to the bit reversal
+of their indices.
+
+** Historical Algorithms
+
+Warren credits several authors with bit-reversal algorithms:
+- Matt Austern (2000, C)
+- Christopher Strachey (1961, one of the earliest known)
+- Donald Knuth (shifting and masking approach)
+
+* Formulas at a Glance
+
+| Operation       | Steps | Masks Used                                       |
+|-----------------+-------+--------------------------------------------------|
+| Reverse bits    |     5 | =0x55555555=, =0x33333333=, =0x0F0F0F0F=, =0x00FF00FF=, =0x0000FFFF= |
+| Reverse bytes   |     2 | =0x00FF00FF=, =0x0000FFFF=                         |
+
+The pattern for each step:
+
+#+begin_example
+    x = ((x & MASK) << shift) | ((x & ~MASK) >> shift)
+#+end_example
+
+* Implementation Files
+
+| File               | Functions                    | Section |
+|--------------------+------------------------------+---------|
+| =reverse_bits.zig=  | reverseBits, reverseBytes   | 7-1     |
+
+* References
+
+- Hacker's Delight, 2nd Edition, Chapter 7: "Rearranging Bits and Bytes"
+  - Section 7-1: "Reversing Bits and Bytes" (pp. 129-134)

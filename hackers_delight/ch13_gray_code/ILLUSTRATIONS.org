@@ -1,0 +1,171 @@
+#+TITLE: Chapter 13 --- Illustrations
+#+SUBTITLE: Step-by-step visual walkthroughs of each algorithm
+
+* Binary to Gray Code: =G = B ^ (B >> 1)=
+
+** The Idea
+
+Each bit of the Gray code is the XOR (parity) of the corresponding
+binary bit and the bit to its left.
+
+** Walkthrough: =binaryToGray(6)= -> =5=
+
+#+begin_example
+  B     = 0110     (6 in binary)
+  B >> 1 = 0011    (shift right by 1)
+
+  XOR each position:
+    B     :  0  1  1  0
+    B >> 1:  0  0  1  1
+             ──────────
+    G     :  0  1  0  1  = 5 in Gray code
+#+end_example
+
+** Walkthrough: =binaryToGray(8)= -> =12=
+
+#+begin_example
+  B      = 1000    (8)
+  B >> 1 = 0100
+
+    B     :  1  0  0  0
+    B >> 1:  0  1  0  0
+             ──────────
+    G     :  1  1  0  0  = 12
+#+end_example
+
+** Full 4-bit Gray code table
+
+#+begin_example
+  Binary   B>>1    B^(B>>1)   Gray
+  ──────   ─────   ────────   ────
+  0000     0000    0000       0000
+  0001     0000    0001       0001
+  0010     0001    0011       0011    <-- only bit 1 changed
+  0011     0001    0010       0010    <-- only bit 0 changed
+  0100     0010    0110       0110    <-- only bit 2 changed
+  0101     0010    0111       0111    <-- only bit 0 changed
+  0110     0011    0101       0101    <-- only bit 1 changed
+  0111     0011    0100       0100    <-- only bit 0 changed
+  1000     0100    1100       1100    <-- only bit 3 changed
+  ...
+#+end_example
+
+Notice: each consecutive Gray code differs in *exactly one bit*.
+
+* Gray Code to Binary: Parallel Prefix XOR
+
+** The Idea
+
+The reverse conversion requires XORing each Gray bit with ALL the
+bits above it. For a 32-bit word, this is done in 5 doubling steps
+(parallel prefix).
+
+** Walkthrough: =grayToBinary(5)= -> =6=
+
+#+begin_example
+  G = 0101   (Gray code 5)
+
+  Step 1: g ^= (g >> 1)
+    g     = 0101
+    g >> 1 = 0010
+    g ^= ... = 0111
+
+  Step 2: g ^= (g >> 2)
+    g     = 0111
+    g >> 2 = 0001
+    g ^= ... = 0110
+
+  Steps 3-5: shifts of 4, 8, 16 have no effect on a 4-bit value.
+
+  Result: 0110 = 6
+#+end_example
+
+** Why 5 doubling steps are needed
+
+Each step doubles the reach of the XOR prefix:
+
+#+begin_example
+  After step 1 (>> 1):  each bit has XOR of itself + 1 bit above
+  After step 2 (>> 2):  each bit has XOR of itself + 3 bits above
+  After step 3 (>> 4):  each bit has XOR of itself + 7 bits above
+  After step 4 (>> 8):  each bit has XOR of itself + 15 bits above
+  After step 5 (>> 16): each bit has XOR of itself + 31 bits above
+
+  After 5 steps, every bit has been XORed with ALL bits above it.
+  This is exactly the inverse of the Gray encoding.
+#+end_example
+
+** Full walkthrough: =grayToBinary(12)= -> =8=
+
+#+begin_example
+  G = 1100   (Gray code 12)
+
+  Step 1: g ^= (g >> 1)
+    1100
+    0110
+    ────
+    1010
+
+  Step 2: g ^= (g >> 2)
+    1010
+    0010
+    ────
+    1000
+
+  Result: 1000 = 8
+#+end_example
+
+** 8-bit walkthrough: =grayToBinary(0x80)= -> =0xFF=
+
+#+begin_example
+  G = 1000 0000   (Gray code 0x80)
+
+  Step 1: g ^= (g >> 1)
+    1000 0000
+    0100 0000
+    ─────────
+    1100 0000
+
+  Step 2: g ^= (g >> 2)
+    1100 0000
+    0011 0000
+    ─────────
+    1111 0000
+
+  Step 3: g ^= (g >> 4)
+    1111 0000
+    0000 1111
+    ─────────
+    1111 1111
+
+  Steps 4-5: no effect (8-bit value).
+
+  Result: 1111 1111 = 0xFF = 255
+#+end_example
+
+The parallel prefix XOR "floods" the highest bit downward through
+all positions --- similar to the bit-flooding technique in Chapter 3.
+
+* Properties Illustrated
+
+** Consecutive Gray codes differ by one bit
+
+#+begin_example
+  G(0) = 0000          G(4) = 0110
+  G(1) = 0001  (bit 0) G(5) = 0111  (bit 0)
+  G(2) = 0011  (bit 1) G(6) = 0101  (bit 1)
+  G(3) = 0010  (bit 0) G(7) = 0100  (bit 0)
+  G(4) = 0110  (bit 2) G(8) = 1100  (bit 3)
+
+  The pattern of which bit flips: 0, 1, 0, 2, 0, 1, 0, 3, ...
+  This is the ruler sequence (position of the rightmost 1-bit of
+  the binary integer being encoded).
+#+end_example
+
+** Roundtrip: encode then decode returns the original
+
+#+begin_example
+  Binary 6:
+    binaryToGray(6)      = 6 ^ 3 = 0110 ^ 0011 = 0101 = 5 (Gray)
+    grayToBinary(5)      = prefix XOR of 0101   = 0110 = 6 (Binary)
+#+end_example
