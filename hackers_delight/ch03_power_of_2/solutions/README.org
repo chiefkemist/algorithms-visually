@@ -1,0 +1,86 @@
+#+TITLE: Chapter 3 -- Rounding to Powers of 2
+#+STARTUP: showall
+
+* Section 3-2: Rounding Up/Down to the Next Power of 2
+
+From /Hacker's Delight/ (2nd Ed., pp. 59-62):
+
+"We define two functions that are similar to floor and ceiling, but which are
+directed roundings to the closest integral power of 2, rather than to the
+closest integer."
+
+- =flp2(x)= -- the greatest power of 2 that is <= x
+- =clp2(x)= -- the least power of 2 that is >= x
+
+** Round Down to Power of 2 (flp2)
+
+"Figure 3-1 illustrates a branch-free algorithm that might be useful if number
+of leading zeros is not available. This algorithm is based on right-propagating
+the leftmost 1-bit, and executes in 12 instructions."
+
+#+begin_src c
+unsigned flp2(unsigned x) {
+    x = x | (x >> 1);
+    x = x | (x >> 2);
+    x = x | (x >> 4);
+    x = x | (x >> 8);
+    x = x | (x >> 16);
+    return x - (x >> 1);
+}
+#+end_src
+
+The technique is called "bit flooding" -- it right-propagates the highest set bit
+to fill all lower positions with 1's, then subtracts half to isolate just the
+highest bit.
+
+#+begin_example
+  x = 00010110 (22 decimal)
+
+  After flooding:  00011111
+  Subtract half:   00010000 (16 decimal) -- the largest power of 2 <= 22
+#+end_example
+
+** Round Up to Power of 2 (clp2)
+
+From the relationship =clp2(x) = 2 * flp2(x - 1)= for x != 1:
+
+#+begin_src c
+unsigned clp2(unsigned x) {
+    x = x - 1;
+    x = x | (x >> 1);
+    x = x | (x >> 2);
+    x = x | (x >> 4);
+    x = x | (x >> 8);
+    x = x | (x >> 16);
+    return x + 1;
+}
+#+end_src
+
+"We require the value computed to be the arithmetically correct value modulo 2^32
+(that is, we take clp2(x) to be 0 for x > 2^31)."
+
+#+begin_example
+  x = 00010110 (22 decimal)
+
+  x - 1:           00010101
+  After flooding:   00011111
+  Add 1:            00100000 (32 decimal) -- the smallest power of 2 >= 22
+#+end_example
+
+** Floor of Log Base 2
+
+"The relation to the logarithm function is:"
+
+- =floor(log2(x)) = 31 - nlz(x)= for x > 0
+
+This can be computed by finding the position of the highest set bit. One approach
+is to use =roundDownToPow2= and then count the position of the single remaining
+bit using a binary search or lookup.
+
+* Solutions
+
+| Language    | File                  | Run Tests                         |
+|-------------+-----------------------+-----------------------------------|
+| Zig         | =round_to_power.zig=  | =zig test round_to_power.zig=     |
+| Python      | =round_to_power.py=   | =python3 round_to_power.py=       |
+| Common Lisp | =round_to_power.lisp= | =sbcl --script round_to_power.lisp= |
