@@ -1,0 +1,157 @@
+#+TITLE: Chapter 2 -- Basics: Rightmost Bits & Absolute Value
+#+STARTUP: showall
+
+* Section 2-1: Manipulating Rightmost Bits
+
+From /Hacker's Delight/ (2nd Ed., pp. 11-14):
+
+"Some of the formulas in this section find application in later chapters."
+
+** Turn Off the Rightmost 1-bit
+
+Formula: =x & (x - 1)=
+
+"Turn off the rightmost 1-bit in a word, producing 0 if none (e.g., 01011000 -> 01010000)."
+
+"This can be used to determine if an unsigned integer is a power of 2 or is 0:
+apply the formula followed by a 0-test on the result."
+
+#+begin_example
+  x        = 01011000
+  x - 1    = 01010111
+  x&(x-1)  = 01010000   (rightmost 1-bit turned off)
+#+end_example
+
+** Turn On the Rightmost 0-bit
+
+Formula: =x | (x + 1)=
+
+"Turn on the rightmost 0-bit in a word, producing all 1's if none
+(e.g., 10100111 -> 10101111)."
+
+#+begin_example
+  x        = 10100111
+  x + 1    = 10101000
+  x|(x+1)  = 10101111   (rightmost 0-bit turned on)
+#+end_example
+
+** Isolate the Rightmost 1-bit
+
+Formula: =x & (-x)=
+
+"Isolate the rightmost 1-bit, producing 0 if none (e.g., 01011000 -> 00001000)."
+
+#+begin_example
+  x        = 01011000
+  -x       = 10101000   (two's complement)
+  x&(-x)   = 00001000   (only the rightmost 1-bit remains)
+#+end_example
+
+** Isolate the Rightmost 0-bit
+
+Formula: =~x & (x + 1)=
+
+"Create a word with a single 1-bit at the position of the rightmost 0-bit in x,
+producing 0 if none (e.g., 10100111 -> 00001000)."
+
+#+begin_example
+  x        = 10100111
+  ~x       = 01011000
+  x + 1    = 10101000
+  ~x&(x+1) = 00001000   (rightmost 0-bit isolated)
+#+end_example
+
+** Mask from Rightmost 1-bit (Smear Right)
+
+Formula: =x ^ (x - 1)=
+
+"Create a word with 1's at the positions of the rightmost 1-bit and the trailing
+0's in x, producing all 1's if no 1-bit (e.g., 01011000 -> 00001111)."
+
+#+begin_example
+  x        = 01011000
+  x - 1    = 01010111
+  x^(x-1)  = 00001111   (mask from rightmost 1-bit through trailing zeros)
+#+end_example
+
+** Turn Off Trailing 1's
+
+Formula: =x & (x + 1)=
+
+"Turn off the trailing 1's in a word, producing x if none
+(e.g., 10100111 -> 10100000)."
+
+"This can be used to determine if an unsigned integer is of the form 2^n - 1, 0,
+or all 1's: apply the formula followed by a 0-test on the result."
+
+#+begin_example
+  x        = 10100111
+  x + 1    = 10101000
+  x&(x+1)  = 10100000   (trailing 1's turned off)
+#+end_example
+
+** Turn On Trailing 0's
+
+Formula: =x | (x - 1)=
+
+"Turn on the trailing 0's in a word, producing x if none
+(e.g., 10101000 -> 10101111)."
+
+#+begin_example
+  x        = 10101000
+  x - 1    = 10100111
+  x|(x-1)  = 10101111   (trailing 0's turned on)
+#+end_example
+
+** Test if Power of Two
+
+Formula: =x != 0 and x & (x - 1) == 0=
+
+A power of 2 has exactly one bit set. Turning off that single bit with
+=x & (x - 1)= gives zero. We also need =x != 0= since 0 is not a power of 2.
+
+* Section 2-4: Absolute Value Function
+
+From /Hacker's Delight/ (2nd Ed., p. 18):
+
+"If your machine does not have an instruction for computing the absolute value,
+this computation can usually be done in three or four branch-free instructions.
+First, compute y <- x >> 31 [arithmetic/signed shift right], and then one of
+the following:"
+
+** Branchless Absolute Value (abs)
+
+Formulas:
+
+- =(x ^ y) - y=
+- =(x + y) ^ y=
+
+Where =y = x >> 31= (arithmetic right shift).
+
+When x >= 0: y = 0x00000000, so =(x ^ 0) - 0 = x=.
+When x < 0:  y = 0xFFFFFFFF, so =(x ^ 0xFFFFFFFF) - 0xFFFFFFFF = (~x) + 1 = -x=.
+
+** Branchless Negative Absolute Value (nabs)
+
+Formulas:
+
+- =y - (x ^ y)=
+
+"We show this function as 'nabs.' Unlike absolute value, it is well defined in
+that it never overflows."
+
+The advantage: =nabs(INT_MIN)= is well-defined (-2147483648), while =abs(INT_MIN)=
+overflows in two's complement.
+
+* Solutions
+
+Solutions are provided in three languages:
+
+| Language    | File                       | Run Tests                                       |
+|-------------+----------------------------+-------------------------------------------------|
+| Zig         | =rightmost_bits.zig=       | =zig test rightmost_bits.zig=                   |
+| Zig         | =absolute_value.zig=       | =zig test absolute_value.zig=                   |
+| Python      | =rightmost_bits.py=        | =python3 rightmost_bits.py=                     |
+| Python      | =absolute_value.py=        | =python3 absolute_value.py=                     |
+| Common Lisp | =rightmost_bits.lisp=      | =sbcl --script rightmost_bits.lisp=             |
+| Common Lisp | =absolute_value.lisp=      | =sbcl --script absolute_value.lisp=             |
